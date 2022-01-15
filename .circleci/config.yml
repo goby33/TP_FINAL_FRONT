@@ -68,6 +68,24 @@ jobs:
             docker push $DOCKER_HUB_USER_ID/$DOCKER_HUB_NAME:$CIRCLE_BUILD_NUM
             docker push $DOCKER_HUB_USER_ID/$DOCKER_HUB_NAME:latest
 
+
+
+  front-netlify-deploy:
+    <<: *shared-config
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}-v1
+            - dependencies-
+      - run:
+          name: Install netlify
+          command: |
+            yarn add -D netlify-cli
+      - run:
+          name: Deploy app
+          command: yarn netlify deploy --auth $NETLIFY_AUTH_TOKEN --dir ~/repo --site $NETLIFY_SITE_ID --prod
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
@@ -82,6 +100,12 @@ workflows:
           requires:
             - unit-tests
       - docker-build-and-push:
+          requires:
+            - build
+          filters:
+            branches:
+              only: main
+      - front-netlify-deploy:
           requires:
             - build
           filters:
