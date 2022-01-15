@@ -6,16 +6,55 @@ version: 2.1
 orbs:
   node: circleci/node@4.7
 
+jobs:
+  install: &shared-config
+    docker:
+      - image: circleci/node:lts-fermium
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}-v1
+            - dependencies-
+      - run: yarn install
+      - save_cache:
+          paths:
+            - node_modules
+          key: dependencies-{{ checksum "package.json" }}-v1
+
+
+  unit-tests:
+    <<: *shared-config
+    steps:
+      - checkout
+      - restore_cache:
+          keys: dependencies-{{ checksum "package.json" }}-v1
+      - run: yarn test:unit
+
+
+  build:
+    <<: *shared-config
+    environment:
+      - VITE_BACKEND_URL_URL: $VITE_BACKEND_URL_URL
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "package.json" }}-v1
+            - dependencies-
+      - run: yarn build
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   sample: # This is the name of the workflow, feel free to change it to better match your workflow.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - node/test:
-          # This is the node version to use for the `cimg/node` tag
-          # Relevant tags can be found on the CircleCI Developer Hub
-          # https://circleci.com/developer/images/image/cimg/node
-          version: '16.10'
-          # If you are using yarn, change the line below from "npm" to "yarn"
-          pkg-manager: yarn
+      - install
+      - unit-tests:
+          requires:
+            - install
+      - build:
+          requires:
+            - unit-tests
