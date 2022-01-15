@@ -30,5 +30,5 @@ yarn build
 
 ```sh
 # Replace this with the app url
-VITE_BACKEND_URL_URL=http://localhost:3000/
+VITE_BACKEND_URL_URL=https://fathomless-headland-54967.herokuapp.com/
 ```
